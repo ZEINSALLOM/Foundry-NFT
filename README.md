@@ -1,66 +1,288 @@
-## Foundry
+# NFT Collection — Basic NFT & Mood NFT
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+A Solidity-based NFT project built with **OpenZeppelin ERC-721 and Foundry**, demonstrating basic NFT minting, metadata integration, and dynamic on-chain NFT artwork.
 
-Foundry consists of:
+The project includes two NFT contracts: `BasicNFT`, which stores token metadata URIs, and `MoodNft`, which allows token holders to change their NFT's mood between happy and sad.
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Overview
 
-## Documentation
+This project explores the fundamentals of non-fungible tokens (NFTs) and on-chain metadata using Solidity.
 
-https://book.getfoundry.sh/
+It demonstrates how to create ERC-721 tokens, associate tokens with metadata, encode SVG artwork using Base64, and generate metadata JSON directly within a smart contract.
 
-## Usage
+The project also includes deployment scripts and automated tests built with Foundry.
 
-### Build
+## Features
 
-```shell
-$ forge build
+- **ERC-721 NFTs:** Implements standard NFT functionality using OpenZeppelin.
+- **Basic NFT Minting:** Creates NFTs with individual metadata URIs.
+- **IPFS Metadata Support:** Supports token URIs pointing to metadata hosted on IPFS.
+- **Dynamic Mood NFTs:** Allows authorized users to change an NFT's mood between `HAPPY` and `SAD`.
+- **On-Chain Metadata:** Generates JSON metadata using Base64 encoding.
+- **SVG Artwork:** Embeds SVG images directly into data URIs.
+- **Deployment Scripts:** Automates contract deployment and NFT minting.
+- **Automated Testing:** Uses Foundry to test minting, metadata, and SVG encoding.
+
+## Project Structure
+
+The following structure is based on the provided source files. Adjust filenames and paths to match your repository.
+
+```text
+.
+├── src/
+│   ├── BasicNFT.sol
+│   └── MoodNft.sol
+├── script/
+│   ├── DeployBasicNft.s.sol
+│   ├── DeployMoodNft.s.sol
+│   └── MintBasicNft.s.sol
+├── test/
+│   ├── BasicNFTTest.t.sol
+│   ├── DeployMoodNftTest.t.sol
+│   └── MoodNftTest.t.sol
+├── img/
+│   └── dynaicimg/
+│       ├── happy.svg
+│       └── sad.svg
+├── lib/
+├── foundry.toml
+├── foundry.lock
+└── README.md
 ```
 
-### Test
+## Smart Contracts
 
-```shell
-$ forge test
+### 1. BasicNFT.sol
+
+A basic ERC-721 NFT contract that allows users to mint tokens with custom metadata URIs.
+
+**Token details:**
+
+- Name: `Dogie`
+- Symbol: `DOG`
+- Standard: ERC-721
+
+**Main functions:**
+
+- `mintNft(string memory tokenUri)`: Mints an NFT to the caller and associates it with the supplied metadata URI.
+- `getTokenCounter()`: Returns the number of NFTs minted.
+- `tokenURI(uint256 tokenId)`: Returns the metadata URI associated with a token ID.
+
+Each newly minted NFT receives a sequential token ID, starting at `0`.
+
+The contract stores token URIs in a mapping from token IDs to strings. The URI can point to metadata hosted on IPFS or another supported location.
+
+### 2. MoodNft.sol
+
+A dynamic ERC-721 NFT contract whose artwork changes according to the token's mood.
+
+**Token details:**
+
+- Name: `MoodNFT`
+- Symbol: `MOOD`
+- Standard: ERC-721
+- Initial mood: `HAPPY`
+
+**Main functions:**
+
+- `mintNft()`: Mints a new NFT with an initial happy mood.
+- `flipMood(uint256 tokenId)`: Switches the NFT between happy and sad.
+- `tokenURI(uint256 tokenId)`: Generates Base64-encoded JSON metadata containing the current mood's image URI.
+- `getTokenCounter()`: Returns the number of NFTs minted.
+
+The contract uses an enum to represent the two possible moods:
+
+```solidity
+enum Mood {
+    HAPPY,
+    SAD
+}
 ```
 
-### Format
+Each token's mood is stored in a mapping. When the mood changes, subsequent calls to `tokenURI()` return metadata referencing the corresponding artwork.
 
-```shell
-$ forge fmt
+#### Mood Authorization
+
+The `flipMood()` function checks whether the caller is the token owner or an approved address.
+
+This allows the owner or an authorized operator to change the NFT's mood.
+
+#### On-Chain Metadata
+
+The contract uses OpenZeppelin's `Base64` utility to encode JSON metadata. The `tokenURI()` function constructs a data URI with the prefix:
+
+```text
+data:application/json;base64,
 ```
 
-### Gas Snapshots
+The metadata includes the NFT name, description, attributes, and image URI.
 
-```shell
-$ forge snapshot
+The SVG images are converted into Base64-encoded image data URIs by the deployment script, allowing the artwork to be embedded in the metadata rather than referenced through a conventional image URL.
+
+## NFT Metadata and Storage
+
+This project demonstrates two approaches to NFT metadata.
+
+| Feature | BasicNFT | MoodNft |
+|---|---|---|
+| Token standard | ERC-721 | ERC-721 |
+| Metadata | URI supplied during minting | Generated by the contract |
+| Artwork | Determined by external metadata | Selected according to mood |
+| State changes | No mood functionality | Mood can be changed |
+| Base64 encoding | Not performed by the contract | Used for JSON and SVG data URIs |
+
+## Deployment Scripts
+
+### DeployBasicNft.s.sol
+
+Deploys the `BasicNFT` contract.
+
+The script:
+
+1. Starts broadcasting transactions.
+2. Deploys a new `BasicNFT` instance.
+3. Stops broadcasting.
+4. Returns the deployed contract instance.
+
+### DeployMoodNft.s.sol
+
+Deploys the `MoodNft` contract using SVG artwork from local files.
+
+The script:
+
+1. Reads `happy.svg` and `sad.svg`.
+2. Converts each SVG into a Base64-encoded image data URI.
+3. Deploys `MoodNft` with both image URIs.
+4. Returns the deployed contract instance.
+
+The script expects the SVG files to exist at the configured paths.
+
+### MintBasicNft.s.sol
+
+Mints a `BasicNFT` using a predefined IPFS metadata URI.
+
+The script uses Foundry DevOps Tools to locate the most recent `BasicNFT` deployment for the current chain, then calls `mintNft()` with the configured metadata URI.
+
+## Installation and Setup
+
+### Prerequisites
+
+- [Git](https://git-scm.com/)
+- [Foundry](https://getfoundry.sh/)
+- A compatible Solidity compiler
+- OpenZeppelin Contracts
+- Foundry DevOps Tools for the minting script
+
+### Clone the Repository
+
+```bash
+git clone <https://github.com/ZEINSALLOM/Foundry-NFT.git>
+cd <Foundry-NFT>
 ```
 
-### Anvil
+### Install Dependencies
 
-```shell
-$ anvil
+If the dependencies are not already installed:
+
+```bash
+forge install foundry-rs/forge-std
+forge install OpenZeppelin/openzeppelin-contracts
 ```
 
-### Deploy
+Install and configure Foundry DevOps Tools if it is required by your repository.
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+Ensure that `foundry.toml` contains the correct remappings for `forge-std`, OpenZeppelin Contracts, and any additional dependencies.
+
+## Build
+
+Compile the smart contracts:
+
+```bash
+forge build
 ```
 
-### Cast
+## Run Tests
 
-```shell
-$ cast <subcommand>
+For detailed execution traces:
+
+```bash
+forge test -vvvv
 ```
 
-### Help
+### Included Tests
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+#### BasicNFTTest
+
+The provided tests verify that:
+
+- The deployed NFT contract has the expected name, `Dogie`.
+- A user can mint an NFT.
+- The recipient's NFT balance increases after minting.
+- The minted token returns the expected metadata URI.
+
+#### DeployMoodNftTest
+
+Tests the SVG-to-image-URI conversion by comparing the generated Base64 data URI against an expected result.
+
+#### MoodNftTest
+
+Deploys a `MoodNft` contract, mints an NFT, and logs the generated token URI to inspect its metadata.
+
+Additional assertions are recommended to verify mood changes, authorization, and the returned metadata after each state transition.
+
+## Running the Deployment Scripts
+
+### Deploy BasicNFT
+
+```bash
+forge script script/DeployBasicNft.s.sol:DeployBasicNft \
+  --rpc-url <RPC_URL> \
+  --broadcast
 ```
+
+### Deploy MoodNft
+
+```bash
+forge script script/DeployMoodNft.s.sol:DeployMoodNft \
+  --rpc-url <RPC_URL> \
+  --broadcast
+```
+
+These commands assume the script filenames match the actual files in your repository.
+
+Replace `<RPC_URL>` with your target network's RPC endpoint. Configure the appropriate broadcaster credentials before deployment, and never commit private keys or secrets to Git.
+
+## Security and Development Notes
+
+This project is intended for learning and experimentation. Before using the contracts in production, consider the following:
+
+- Validate token existence when returning metadata for a token ID.
+- Review authorization rules for changing NFT state.
+- Verify that the supplied metadata and image URIs follow the expected formats.
+- Test that mood changes update the generated metadata correctly.
+- Review the behavior of approved operators and token transfers.
+- Pin dependency versions and verify compiler compatibility.
+- Add additional tests for invalid token IDs and unauthorized operations.
+
+Also verify that the filenames imported by your tests and scripts match the actual filenames in your repository.
+
+## Future Improvements
+
+Potential enhancements include:
+
+- Adding comprehensive tests for mood changes and authorization.
+- Adding tests for invalid token IDs.
+- Improving NFT metadata validation.
+- Supporting additional moods and artwork.
+- Adding scripts for batch minting.
+- Deploying to a testnet and documenting verified contract addresses.
+- Integrating a frontend to display and interact with NFTs.
+- Adding continuous integration for automated builds and tests.
+
+## License
+
+The provided Solidity files declare the MIT License or reference a repository license file. Include a root-level `LICENSE` file containing the appropriate license text and ensure the SPDX identifiers are consistent.
+
+---
+
+**Disclaimer:** This project is intended for educational and development purposes. Review and test all smart contracts before deploying them to a production blockchain.
