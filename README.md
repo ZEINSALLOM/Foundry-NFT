@@ -176,8 +176,8 @@ The script uses Foundry DevOps Tools to locate the most recent `BasicNFT` deploy
 ### Clone the Repository
 
 ```bash
-git clone <https://github.com/ZEINSALLOM/Foundry-NFT.git>
-cd <Foundry-NFT>
+git clone https://github.com/ZEINSALLOM/Foundry-NFT.git
+cd Foundry-NFT
 ```
 
 ### Install Dependencies
